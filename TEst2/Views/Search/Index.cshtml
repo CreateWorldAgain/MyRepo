@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Search Page";
+}
+
+
+
+<div style="color:white; margin:0 auto; width:800px; background-color:white;  height:auto;  border:2px solid #304967; padding:0px; margin-top:50px;">
+        <h2 style="background-color: #304967;    margin: 0px;    padding: 5px; border-bottom:1px solid #304967; ">Search</h2>
+
+        <input type="text" id="search-data" name="search-data" required="" class="form-control" style=" margin: auto;
+    width: 70%;   height:40px; margin-top:15px; border-color:#304967;" />
+        <input type="button" class="form-control" value="Search" id="btSearch" style="background-color: rgb(83, 168, 222); 
+    color:white;margin: auto; width: 70%;   height:40px; margin-top:15px; margin-bottom:15px; border-width:0px; " />
+
+     
+
+    </div>
+    <div id="search-result"></div>
+
+
+    <script>
+
+        $("#btSearch").click(function () {
+            $("#search-result").load("/search/searchdata?text=" + $("#search-data").val(), function (e) {
+
+            });
+        });
+
+    </script>

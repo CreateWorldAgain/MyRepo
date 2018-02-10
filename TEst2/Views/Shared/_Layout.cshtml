@@ -1,0 +1,234 @@
+﻿@using TEst2.Domains;
+@using Newtonsoft.Json;
+@using Newtonsoft.Json.Serialization;
+@{
+
+    var menu = "";
+
+
+    if (User.IsInRole("Default"))
+    {
+        var menus = new List<MenuItem>
+            {
+                new MenuItem{ Text="Search"}
+            };
+
+        menu = Newtonsoft.Json.JsonConvert.SerializeObject(menus, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore
+        });
+    }
+
+    if (User.IsInRole("Staff"))
+    {
+        var menus = new List<MenuItem>
+        {
+            new MenuItem{ Text="Search"},
+            new MenuItem { Text = "Files", Items=new List<MenuItem>{
+                new MenuItem{ Text="Excel"},
+                new MenuItem{ Text="XML"}
+            } }
+        };
+
+        menu = Newtonsoft.Json.JsonConvert.SerializeObject(menus, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore
+        });
+    }
+
+    if (User.IsInRole("Administrator"))
+    {
+        var menus = new List<MenuItem>
+            {
+                new MenuItem{ Text="Search", MenuType=MenuItemAction.Search},
+                new MenuItem { Text = "Files", MenuType=MenuItemAction.None, Items=new List<MenuItem>{
+                    new MenuItem{ Text="Excel", MenuType=MenuItemAction.Excel},
+                    new MenuItem{ Text="XML", MenuType=MenuItemAction.Xml}
+                } },
+                new MenuItem { Text = "Administration", MenuType=MenuItemAction.None, Items=new List<MenuItem>{
+                    new MenuItem{ Text="Users", MenuType=MenuItemAction.Users}
+                } }
+            };
+
+        menu = JsonConvert.SerializeObject(menus, new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore
+        });
+    }
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TEst2</title>
+
+
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery-3.1.0.min.js"%3E%3C/script%3E'))</script>
+    <link href="~/lib/devextreme/css/dx.common.css" rel="stylesheet" />
+    <link href="~/css/bootstrap.css" rel="stylesheet" />
+    <link href="~/lib/devextreme/css/dx.light.css" rel="stylesheet" />
+    <script src="~/lib/devextreme/js/dx.all.js"></script>
+    <script src="~/lib/toastr/toastr.js"></script>
+
+    <script src="~/js/devextreme/aspnet/dx.aspnet.mvc.js"></script>
+    <script src="~/lib/devextreme-aspnet-data/js/dx.aspnet.data.js"></script>
+
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/lib/toastr/toastr.css" rel="stylesheet" />
+
+</head>
+<body class="dx-viewport" style="background-image:url('/images/bg.jpg')">
+    @await Html.PartialAsync("_Header")
+
+
+    <div class="container-fluid">
+
+
+        @RenderBody()
+
+
+    </div>
+
+    @await Html.PartialAsync("_Footer")
+
+    <div id="user-profile"></div>
+
+    @RenderSection("Scripts", required: false)
+
+    <script>
+
+        $(function () {
+
+            $("#menuLeft").dxMenu({
+                items: @Html.Raw(menu),
+                hideSubmenuOnMouseLeave: false,
+                onItemClick: function (data) {
+                    var menuItemType = data.itemData.menuType;
+
+                    switch (menuItemType) {
+                        case @Html.Raw((int)MenuItemAction.Search):
+                            location.href = "/search";
+                            break;
+                        case @Html.Raw((int)MenuItemAction.Excel):
+                            break;
+                        case @Html.Raw((int)MenuItemAction.Xml):
+                            break;
+                        case @Html.Raw((int)MenuItemAction.Users):
+                            location.href='/administration/users';
+                            break;        
+                        default:
+                            break;
+                    }
+
+                }
+            }).dxMenu("instance");
+
+
+            $("#menuRight").dxMenu({
+                items: [
+                    {
+                        text: "@Html.Raw( User.Identity.Name)",
+                        items: [{ text: "Profile" }, {text: "Logout"}]
+                    },
+                    { text: "EN", items: [{ text: "EN" }, {text:"DE"}] },
+
+                ],
+
+                hideSubmenuOnMouseLeave: false,
+                onItemClick: function (data) {
+                    switch (data.itemData.text) {
+                        case "Logout":
+                            location.href = "/account/logout";
+                            break;
+                        case "Profile":
+                            UserProfile();
+                            break;
+                        case "EN":
+                            if (data.itemData.items == undefined) {
+                                changeLang("EN");
+                            }
+                            break;
+                        case "DE":
+                            if (data.itemData.items== undefined) {
+                                changeLang("DE");
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }).dxMenu("instance");
+        });
+
+
+        function UserProfile() {
+            $('#user-profile').load('/user/profile',
+                function () {
+                    setTimeout(function () {
+
+                        $("#popup-profile").dxPopup("instance").show();
+
+                        $('#formProfile').submit(function () {
+
+                            $('#saveButton').prepend('<span class="button-lock"></span>');
+
+                            var btnText = $('#saveButton  .dx-button-text').text();
+                            $('#saveButton  .dx-button-text').html("&nbsp;");
+
+                            $.ajax({
+                                type: "POST",
+                                url: "/user/save",
+                                data: $('#formProfile').serialize(),
+                                success: function (json) {
+
+                                    if (json.error == "") {
+                                        $("#popup-profile").dxPopup("hide");
+                                        toastr['info']('Данные успешно сохранены');
+                                    }
+                                    else {
+                                        toastr["error"](json.error, { "timeOut": "5000" });
+                                    }
+
+                                    $('#saveButton').children()[0].remove();
+                                    $('#saveButton  .dx-button-text').text(btnText);
+                                },
+                                error: function (e) {
+                                    $('#saveButton').children()[0].remove();
+                                    $('#saveButton  .dx-button-text').text(btnText);
+
+                                    toastr["error"]("HTTP Status: " + e.status);
+                                }
+                            });
+
+                            event.preventDefault();
+                            return false;
+                        });
+
+                    }, 200);
+                }
+            );
+
+
+        }
+
+        function changeLang(lang) {
+
+            $.ajax({
+                type: "POST",
+                url: "/home/changelang",
+                data: {"lang":lang},
+                success: function (json) {
+                    location.reload();
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>

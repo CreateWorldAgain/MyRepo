@@ -1,0 +1,22 @@
+@using Microsoft.DotNet.PlatformAbstractions;
+@using System.Reflection;
+
+
+@{
+    var version= Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+}
+
+<footer class="fixed-bottom navbar">
+            <div class="container-fluid">
+                <div class="row" style="width:100%">
+                    <div class="col-lg-6">
+                        <a href="#" style="color:white">Copyright 2018  All rights reserved.</a>
+                    </div>
+                    <div class="col-lg-6" style="text-align:right">
+                        <span style="color:white">ver. @version</span>
+                    </div>
+                </div>
+            </div>
+</footer>
+
+        

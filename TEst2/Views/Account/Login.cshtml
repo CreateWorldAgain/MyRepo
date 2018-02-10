@@ -1,0 +1,137 @@
+﻿@{
+    Layout = "_LayoutLogin";
+}
+
+<div id="card-with-string">
+    <div class="card card-cascade narrower bg1" style="width: 350px;margin: 100px auto;margin-bottom: 20px;height: auto;display: block;">
+
+        <div class="card-header bg2 " style="text-align:center;color:white;padding-top:5px;">
+            <h4>Login Page</h4>
+        </div>
+
+
+        <div class="card-body" style="padding-top:0px">
+            <form asp-controller="Account" asp-action="Login" method="post" id="form-login-container">
+                <div id="form"></div>
+                <div class="dx-field" style="margin-top:20px">
+                    @*<div class="g-recaptcha" data-sitekey="6LcP_kEUAAAAAEhhXmZ-GNBLu6Lefi8sIUmZ-7Xv"></div>*@
+                    <div class="dx-field" style="margin-top:20px">
+                        <div class="dx-field-label">
+                            <div id="rememberMe"></div>
+                        </div>
+                        <div class="dx-field-value">
+                            <div id="login-container" class="button-div">
+                                <div id="btLogin" style="background-color:#53a8de;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size:14px">
+                    <a asp-action="Register">Registration</a>
+                    <a asp-action="ForgotPassword" style="float:right">Forgot your password?</a>
+                </div>
+                
+            </form>
+        </div>
+    </div>
+
+    <div class="card bg1" style="width:350px; max-width:100%; height:auto; margin:0 auto; display:block;">
+        <div class="card-body">
+            <div id="loginFooterContainer" style="margin-top:20px;">
+                <a href="http://ilab.md" style="font-size:14px;">Powered by</a>
+                @await Html.PartialAsync("_SelectLanguagePartial")
+            </div>
+        </div>
+    </div>
+    </div>
+<script src='https://www.google.com/recaptcha/api.js'></script>
+@section Scripts {
+    <script>
+
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        $(function () {
+            var formWidget = $("#form").dxForm({
+
+                readOnly: false,
+                showColonAfterLabel: false,
+                showValidationSummary: false,
+                validationGroup: "customerData",
+                requiredMark: '',
+                items: [{
+                    dataField: "Login",
+                    validationRules: [{
+                        type: "required",
+                        message: "Obligatory field"
+                    }]
+                }, {
+                    dataField: "Password",
+                    editorOptions: {
+                        mode: "password"
+                    },
+                    validationRules: [{
+                        type: "required",
+                        message: "Obligatory field"
+                    }]
+                },]
+            }).dxForm("instance");
+
+            $("#form-login-container").on("submit", function (e) {
+
+                var data = $(this).serialize();
+
+                $("#login-container").prepend("<span class=\"button-lock\"></span>");
+
+                var btnText = $("#login-container .dx-button-text").text();
+                $("#login-container .dx-button-text").html("&nbsp;");
+
+                $.ajax({
+                    url: "/account/login",
+                    type: "post",
+                    data: data
+                })
+                    .fail(function (e) { 
+                        toastr["error"](e.statusText+". HTTP-"+e.status, { "timeOut": "5000" });
+                    })
+                    .done(function (json) {                        
+                        if (json.error == "") {
+                            var redirect = (getParameterByName("ReturnUrl") == null) ? "/" : getParameterByName("ReturnUrl");
+                            location.href = redirect;
+                        } else {
+                            toastr["error"](json.error, { "timeOut": "5000" });
+                            $("[name=username]").focus().select();
+                        }
+                    })
+                    .always(function () {                        
+                        $("#login-container").children()[0].remove();
+                        $("#login-container .dx-button-text").text(btnText);
+                    });
+
+                e.preventDefault();
+            });
+
+            $("#rememberMe").dxCheckBox({
+                value: false,
+                width: 150,
+                text: "Remember me"
+            });
+            $("#rememberMe input").attr('name', 'rememberMe');
+
+            $("#btLogin").dxButton({
+                text: "Login",
+                type: "default",
+                width: '100%',
+                useSubmitBehavior: true,
+                validationGroup: "customerData"
+            });
+        });
+    </script>
+}
